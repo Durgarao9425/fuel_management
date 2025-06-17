@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from "react";
 
 interface User {
   id: string;
@@ -20,45 +20,52 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>({
-    id: '1',
-    name: 'John Doe',
-    email: 'john@fuelpro.com',
-    role: 'Administrator',
-    avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150'
-  });
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
+  const [user, setUser] = useState<User | null>(null);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call
-    if (email === 'admin@fuelpro.com' && password === 'admin123') {
-      setUser({
-        id: '1',
-        name: 'John Doe',
-        email: 'john@fuelpro.com',
-        role: 'Administrator',
-        avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150'
+    try {
+      const response = await fetch("http://localhost:5000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-      return true;
+      if (!response.ok) return false;
+      const data = await response.json();
+      if (data.token && data.user) {
+        setUser({
+          id: data.user.id,
+          name: data.user.name || "",
+          email: data.user.email,
+          role: data.user.role,
+          avatar: data.user.avatar || "",
+        });
+        localStorage.setItem("token", data.token);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem("token");
   };
 
-  const value = {
-    user,
-    login,
-    logout,
-    isAuthenticated: !!user,
-  };
+  const isAuthenticated = !!user;
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

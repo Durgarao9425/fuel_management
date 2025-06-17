@@ -121,10 +121,6 @@ const Login: React.FC = () => {
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
-
-          <div className="text-center text-sm text-gray-600">
-            Demo credentials: admin@fuelpro.com / admin123
-          </div>
         </form>
       </div>
     </div>

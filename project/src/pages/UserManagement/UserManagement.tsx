@@ -1,76 +1,141 @@
-import React, { useState } from 'react';
-import { Plus, Search, Edit, Trash2, User, Shield, Key } from 'lucide-react';
-import Card from '../../components/UI/Card';
-import Button from '../../components/UI/Button';
-import Modal from '../../components/UI/Modal';
+import React, { useState, useEffect } from "react";
+import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import Card from "../../components/UI/Card";
+import Button from "../../components/UI/Button";
+import Modal from "../../components/UI/Modal";
+import { useAuth } from "../../contexts/AuthContext";
 
 const UserManagement: React.FC = () => {
-  const [users] = useState([
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@fuelpro.com',
-      role: 'Administrator',
-      status: 'Active',
-      lastLogin: '2024-01-15 10:30',
-      avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150'
-    },
-    {
-      id: 2,
-      name: 'Sarah Wilson',
-      email: 'sarah@fuelpro.com',
-      role: 'Manager',
-      status: 'Active',
-      lastLogin: '2024-01-15 09:15',
-      avatar: 'https://images.pexels.com/photos/3992656/pexels-photo-3992656.jpeg?auto=compress&cs=tinysrgb&w=150&h=150'
-    },
-    {
-      id: 3,
-      name: 'Mike Johnson',
-      email: 'mike@fuelpro.com',
-      role: 'Operator',
-      status: 'Active',
-      lastLogin: '2024-01-14 16:45',
-      avatar: 'https://images.pexels.com/photos/2381069/pexels-photo-2381069.jpeg?auto=compress&cs=tinysrgb&w=150&h=150'
-    },
-    {
-      id: 4,
-      name: 'Emma Davis',
-      email: 'emma@fuelpro.com',
-      role: 'Cashier',
-      status: 'Inactive',
-      lastLogin: '2024-01-10 14:20',
-      avatar: 'https://images.pexels.com/photos/3992656/pexels-photo-3992656.jpeg?auto=compress&cs=tinysrgb&w=150&h=150'
-    },
-  ]);
-
-  const [searchTerm, setSearchTerm] = useState('');
+  const [users, setUsers] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const { user } = useAuth();
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("http://localhost:5000/api/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data);
+        }
+      } catch (err) {
+        // handle error
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  const filteredUsers = users.filter(
+    (user) =>
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'Administrator':
-        return 'bg-red-100 text-red-800';
-      case 'Manager':
-        return 'bg-blue-100 text-blue-800';
-      case 'Operator':
-        return 'bg-green-100 text-green-800';
-      case 'Cashier':
-        return 'bg-yellow-100 text-yellow-800';
+      case "Administrator":
+        return "bg-red-100 text-red-800";
+      case "Manager":
+        return "bg-blue-100 text-blue-800";
+      case "Operator":
+        return "bg-green-100 text-green-800";
+      case "Cashier":
+        return "bg-yellow-100 text-yellow-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusColor = (status: string) => {
-    return status === 'Active' ? 'text-green-600' : 'text-red-600';
+    return status === "Active" ? "text-green-600" : "text-red-600";
+  };
+
+  // Add User
+  const handleAddUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const name = (form.elements.namedItem("name") as HTMLInputElement).value;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement)
+      .value;
+    const role = (form.elements.namedItem("role") as HTMLSelectElement).value;
+    // Status is not in backend, so ignore for now
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:5000/api/users/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email, password, role }),
+      });
+      if (response.ok) {
+        setIsAddModalOpen(false);
+        form.reset();
+        // Refresh users
+        const usersRes = await fetch("http://localhost:5000/api/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (usersRes.ok) setUsers(await usersRes.json());
+      }
+    } catch {}
+  };
+
+  // Edit User
+  const handleEditUser = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    const form = e.currentTarget;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const password = (form.elements.namedItem("password") as HTMLInputElement)
+      ?.value;
+    const role = (form.elements.namedItem("role") as HTMLSelectElement).value;
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `http://localhost:5000/api/users/${selectedUser.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ email, password, role: role.toLowerCase() }),
+        }
+      );
+      if (response.ok) {
+        setSelectedUser(null);
+        // Refresh users
+        const usersRes = await fetch("http://localhost:5000/api/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (usersRes.ok) setUsers(await usersRes.json());
+      }
+    } catch {}
+  };
+
+  // Delete User
+  const handleDeleteUser = async (id: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`http://localhost:5000/api/users/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        // Refresh users
+        const usersRes = await fetch("http://localhost:5000/api/users", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (usersRes.ok) setUsers(await usersRes.json());
+      }
+    } catch {}
   };
 
   return (
@@ -78,9 +143,14 @@ const UserManagement: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600">Manage system users and their permissions</p>
+          <p className="text-gray-600">
+            Manage system users and their permissions
+          </p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)} className="mt-4 lg:mt-0">
+        <Button
+          onClick={() => setIsAddModalOpen(true)}
+          className="mt-4 lg:mt-0"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add User
         </Button>
@@ -134,20 +204,36 @@ const UserManagement: React.FC = () => {
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-3">
-                      <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full" />
+                      <img
+                        src={user.avatar}
+                        alt={user.name}
+                        className="w-10 h-10 rounded-full"
+                      />
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {user.name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {user.email}
+                        </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(
+                        user.role
+                      )}`}
+                    >
                       {user.role}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`text-sm font-medium ${getStatusColor(user.status)}`}>
+                    <span
+                      className={`text-sm font-medium ${getStatusColor(
+                        user.status
+                      )}`}
+                    >
                       {user.status}
                     </span>
                   </td>
@@ -162,7 +248,10 @@ const UserManagement: React.FC = () => {
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button className="text-red-600 hover:text-red-800">
+                      <button
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -181,7 +270,7 @@ const UserManagement: React.FC = () => {
         title="Add New User"
         size="lg"
       >
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleAddUser}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -189,6 +278,7 @@ const UserManagement: React.FC = () => {
               </label>
               <input
                 type="text"
+                name="name"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter full name"
               />
@@ -199,6 +289,7 @@ const UserManagement: React.FC = () => {
               </label>
               <input
                 type="email"
+                name="email"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter email address"
               />
@@ -210,7 +301,10 @@ const UserManagement: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Role
               </label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <select
+                name="role"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
                 <option value="Cashier">Cashier</option>
                 <option value="Operator">Operator</option>
                 <option value="Manager">Manager</option>
@@ -221,7 +315,10 @@ const UserManagement: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Status
               </label>
-              <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <select
+                name="status"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
               </select>
@@ -234,16 +331,20 @@ const UserManagement: React.FC = () => {
             </label>
             <input
               type="password"
+              name="password"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter password"
             />
           </div>
 
           <div className="flex justify-end space-x-3">
-            <Button variant="secondary" onClick={() => setIsAddModalOpen(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => setIsAddModalOpen(false)}
+            >
               Cancel
             </Button>
-            <Button>Add User</Button>
+            <Button type="submit">Add User</Button>
           </div>
         </form>
       </Modal>
@@ -256,7 +357,7 @@ const UserManagement: React.FC = () => {
         size="lg"
       >
         {selectedUser && (
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={handleEditUser}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -264,6 +365,7 @@ const UserManagement: React.FC = () => {
                 </label>
                 <input
                   type="text"
+                  name="name"
                   defaultValue={selectedUser.name}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -274,6 +376,7 @@ const UserManagement: React.FC = () => {
                 </label>
                 <input
                   type="email"
+                  name="email"
                   defaultValue={selectedUser.email}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -285,7 +388,8 @@ const UserManagement: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role
                 </label>
-                <select 
+                <select
+                  name="role"
                   defaultValue={selectedUser.role}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
@@ -299,7 +403,8 @@ const UserManagement: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Status
                 </label>
-                <select 
+                <select
+                  name="status"
                   defaultValue={selectedUser.status}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
@@ -309,11 +414,23 @@ const UserManagement: React.FC = () => {
               </div>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                name="password"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter new password (leave blank to keep current)"
+              />
+            </div>
+
             <div className="flex justify-end space-x-3">
               <Button variant="secondary" onClick={() => setSelectedUser(null)}>
                 Cancel
               </Button>
-              <Button>Update User</Button>
+              <Button type="submit">Update User</Button>
             </div>
           </form>
         )}

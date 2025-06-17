@@ -1,0 +1,18 @@
+{
+  "name": "fuel-management-system-root",
+  "version": "1.0.0",
+  "description": "Fuel Management System - Full Stack Application",
+  "main": "index.js",
+  "scripts": {
+    "start:backend": "cd backend && npm run dev",
+    "start:frontend": "cd project && npm run dev",
+    "start:all": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "install:all": "npm install && cd backend && npm install && cd ../project && npm install"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
