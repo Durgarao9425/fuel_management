@@ -1,15 +1,22 @@
-import React from 'react';
-import { Bell, Search, Menu } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import React from "react";
+import { Bell, Search, Menu } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user } = useAuth();
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 px-4 lg:px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <button className="lg:hidden p-2 rounded-md hover:bg-gray-100">
+          <button
+            className="lg:hidden p-2 rounded-md hover:bg-gray-100"
+            onClick={onMenuClick}
+          >
             <Menu className="w-5 h-5" />
           </button>
           <div className="hidden md:flex">
@@ -34,7 +41,10 @@ const Header: React.FC = () => {
 
           <div className="flex items-center space-x-3">
             <img
-              src={user?.avatar || 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150'}
+              src={
+                user?.avatar ||
+                "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150&h=150"
+              }
               alt={user?.name}
               className="w-8 h-8 rounded-full"
             />

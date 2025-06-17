@@ -1,21 +1,13 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Fuel, 
-  Car, 
-  BarChart3, 
-  Settings
-} from 'lucide-react';
+import React from "react";
+import { NavLink } from "react-router-dom";
+import { LayoutDashboard, Fuel, Car, BarChart3 } from "lucide-react";
 
+// Only 4 options for mobile bottom nav
 const mobileNavItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/fuel-transactions', icon: Fuel, label: 'Fuel' },
-  { path: '/vehicles', icon: Car, label: 'Vehicles' },
-  { path: '/reports', icon: BarChart3, label: 'Reports' },
-  { path: '/users', icon: Users, label: 'Users' },
-  { path: '/settings', icon: Settings, label: 'Settings' },
+  { path: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/fuel-transactions", icon: Fuel, label: "Fuel" },
+  { path: "/vehicles", icon: Car, label: "Vehicles" },
+  { path: "/reports", icon: BarChart3, label: "Reports" },
 ];
 
 const MobileNav: React.FC = () => {
@@ -28,9 +20,7 @@ const MobileNav: React.FC = () => {
             to={item.path}
             className={({ isActive }) =>
               `flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors duration-200 ${
-                isActive
-                  ? 'text-blue-600'
-                  : 'text-gray-500'
+                isActive ? "text-blue-600" : "text-gray-500"
               }`
             }
           >
